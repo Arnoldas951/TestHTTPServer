@@ -108,12 +108,18 @@ namespace LeanWebServer
                                 " " + request.HttpMethod + " /" +
                                 request.Url?.AbsoluteUri);
 
-            TextWriter writer = File.AppendText(pathLocation);
-            writer.WriteLine(DateTime.Now + " " + request.RemoteEndPoint +
-                " " + request.HttpMethod + " /" +
-                request.Url?.AbsoluteUri);
-            writer.Close();
-
+            try
+            {
+                TextWriter writer = File.AppendText(pathLocation);
+                writer.WriteLine(DateTime.Now + " " + request.RemoteEndPoint +
+                    " " + request.HttpMethod + " /" +
+                    request.Url?.AbsoluteUri);
+                writer.Close();
+            }
+            catch (Exception c)
+            {
+                Console.WriteLine(c.ToString());
+            }
         }
 
         public static void Log(string LogItem)
