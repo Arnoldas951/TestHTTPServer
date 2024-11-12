@@ -14,9 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Website\CSS\" />
     <Folder Include="Website\Images\" />
-    <Folder Include="Website\Scripts\" />
   </ItemGroup>
 
 </Project>

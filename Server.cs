@@ -121,12 +121,17 @@ namespace LeanWebServer
             string pathLocation = logLocation + DateTime.Now.ToShortDateString() + ".txt";
             if (!File.Exists(pathLocation))
                 File.Create(pathLocation);
+            try
+            {
 
-           
-            TextWriter writer = File.AppendText(pathLocation);
-            writer.WriteLine(DateTime.Now + " " + LogItem);
-            writer.Close();
-
+                TextWriter writer = File.AppendText(pathLocation);
+                writer.WriteLine(DateTime.Now + " " + LogItem);
+                writer.Close();
+            }
+            catch (Exception ex) 
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
 

@@ -47,7 +47,7 @@ namespace LeanWebServer
 
         public ResponsePacket Route(string verb, string path, Dictionary<string, object> kvParams)
         {
-            string ext = path.RightOf(".");
+            string ext = path.RightOfRightmostOf(".");
             ExtensionInfo extinfo;
             ResponsePacket ret = null;
 

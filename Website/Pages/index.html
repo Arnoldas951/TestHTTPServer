@@ -1,1 +1,36 @@
-﻿<div>YOLO AMIGO</div>
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../CSS/GlobalStyles.css">
+    <title>Gonna yump</title>
+    <script type="text/javascript" src="../Scripts/jquery-3.7.1.min.js"></script>
+    <script>
+
+        $(document).ready(function () {
+            $("#jumpBtn").click(function () {
+                var randomNumber = getRandomInt(2);
+                if (randomNumber == 1)
+                    alert("you lived");
+                else
+                    alert("you died");
+
+            });
+        });
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+    </script>
+
+</head>
+
+
+<body>
+    <div>YOLO AMIGO</div>
+    <button id="jumpBtn">
+        Take a leap bro
+    </button>
+</body>
+

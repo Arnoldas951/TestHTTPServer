@@ -33,28 +33,39 @@ namespace LeanWebServer.Extentions
 
         public static string RightOfSubstring(this string s, string substring)
         {
-            string ret = string.Empty;
-            int idx = s.IndexOf(substring);
+            string result = string.Empty;
+            int index = s.IndexOf(substring);
 
-            if (idx != -1)
+            if (index != -1)
             {
-                ret = s.Substring(idx + substring.Length);
+                result = s.Substring(index + substring.Length);
             }
 
-            return ret;
+            return result;
         }
 
-        public static string LeftOfRightmostOf(this string src, string c)
+        public static string RightOfRightmostOf(this string s, string c)
         {
-            string ret = src;
-            int idx = src.LastIndexOf(c);
+            string result = s;
+            int index = s.LastIndexOf(c);
 
-            if (idx != -1)
+            if (index != -1)
+                result = s.Substring(index + 1);
+
+            return result;
+        }
+
+        public static string LeftOfRightmostOf(this string s, string c)
+        {
+            string result = s;
+            int index = s.LastIndexOf(c);
+
+            if (index != -1)
             {
-                ret = src.Substring(0, idx);
+                result = result.Substring(0, index);
             }
 
-            return ret;
+            return result;
         }
     }
 
