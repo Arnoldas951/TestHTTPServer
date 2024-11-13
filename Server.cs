@@ -1,4 +1,5 @@
-﻿using LeanWebServer.Extentions;
+﻿using LeanWebServer.Enums;
+using LeanWebServer.Extentions;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -15,6 +16,7 @@ namespace LeanWebServer
         private static Semaphore sem = new Semaphore(maxSimultaneousConnections, maxSimultaneousConnections);
         private static string logLocation = @"D:\Logs\";
         private static Router router;
+        public Func<ServerErrors, string> OnError { get; set; }
 
         public Server()
         {
@@ -59,28 +61,36 @@ namespace LeanWebServer
         {
             ResponsePacket resp = null;
             HttpListenerContext context = await listener.GetContextAsync();
+            try
+            {
 
-            string path = context.Request.RawUrl.LeftOf("?");
-            string verb = context.Request.HttpMethod;
-            string parms = context.Request.RawUrl.RightOf("?");
-            Dictionary<string, object> kvParams = GetKeyValues(parms);
-            string data = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding).ReadToEnd();
-            GetKeyValues(data, kvParams);
-            Log(parms);
-            resp = router.Route(verb, path, kvParams);
+                string path = context.Request.RawUrl.LeftOf("?");
+                string verb = context.Request.HttpMethod;
+                string parms = context.Request.RawUrl.RightOf("?");
+                Dictionary<string, object> kvParams = GetKeyValues(parms);
+                string data = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding).ReadToEnd();
+                GetKeyValues(data, kvParams);
+                Log(parms);
+                resp = router.Route(verb, path, kvParams);
 
-            Respond(context.Response, resp);
+                if (resp.Error != Enums.ServerErrors.OK)
+                {
+                    resp = router.Route("get", OnError(resp.Error), null);
+                    resp.Redirect = OnError(resp.Error);
+                }
 
-            Console.WriteLine("Connected: " + context.Request.UserAgent);
-            sem.Release();
-            Log(context.Request);
+                Respond(context.Request, context.Response, resp);
 
-            //string response = "<html><head><meta http-equiv='content-type' content='text/html; charset=utf-8'/>\r\n      </head>>Look at you lmao!</html";
-
-            //byte[] encoded = Encoding.UTF8.GetBytes(response);
-            //context.Response.ContentLength64 = encoded.Length;
-            //context.Response.OutputStream.Write(encoded, 0, encoded.Length);
-            //context.Response.OutputStream.Close();
+                Console.WriteLine("Connected: " + context.Request.UserAgent);
+                sem.Release();
+                Log(context.Request);
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+                Log(ex.StackTrace);
+                resp = new ResponsePacket() { Redirect = OnError(ServerErrors.ServerError) };
+            }
         }
 
         private void RunServer(HttpListener listener)
@@ -134,22 +144,31 @@ namespace LeanWebServer
                 writer.WriteLine(DateTime.Now + " " + LogItem);
                 writer.Close();
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
         }
 
 
-        
 
-        private static void Respond(HttpListenerResponse response, ResponsePacket resp)
+
+        private static void Respond(HttpListenerRequest request, HttpListenerResponse response, ResponsePacket resp)
         {
-            response.ContentType = resp.ContentType;
-            response.ContentLength64 = resp.Data.Length;
-            response.OutputStream.Write(resp.Data, 0, resp.Data.Length);
-            response.ContentEncoding = resp.Encoding;
-            response.StatusCode = (int)HttpStatusCode.OK;
+            if (string.IsNullOrEmpty(resp.Redirect))
+            {
+                response.ContentType = resp.ContentType;
+                response.ContentLength64 = resp.Data.Length;
+                response.OutputStream.Write(resp.Data, 0, resp.Data.Length);
+                response.ContentEncoding = resp.Encoding;
+                response.StatusCode = (int)HttpStatusCode.OK;
+            }
+            else
+            {
+                response.StatusCode = (int)HttpStatusCode.Redirect;
+                response.Redirect("http://" + request.UserHostAddress + resp.Redirect);
+            }
+
             response.OutputStream.Close();
         }
 
