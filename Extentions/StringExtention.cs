@@ -46,7 +46,7 @@ namespace LeanWebServer.Extentions
 
         public static string RightOfRightmostOf(this string s, string c)
         {
-            string result = s;
+            string result = string.Empty;
             int index = s.LastIndexOf(c);
 
             if (index != -1)

@@ -15,12 +15,14 @@ namespace LeanWebServer
         public static int maxSimultaneousConnections = 20;
         private static Semaphore sem = new Semaphore(maxSimultaneousConnections, maxSimultaneousConnections);
         private static string logLocation = @"D:\Logs\";
-        private static Router router;
+        public Router router;
+        private SessionManager sessionManager;
         public Func<ServerErrors, string> OnError { get; set; }
 
         public Server()
         {
             router = new Router();
+            sessionManager = new SessionManager();
         }
 
         public void Start(string webSitePath)
@@ -64,14 +66,17 @@ namespace LeanWebServer
             try
             {
 
+                Session session = sessionManager.GetSession(context.Request.RemoteEndPoint);
                 string path = context.Request.RawUrl.LeftOf("?");
                 string verb = context.Request.HttpMethod;
                 string parms = context.Request.RawUrl.RightOf("?");
                 Dictionary<string, object> kvParams = GetKeyValues(parms);
                 string data = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding).ReadToEnd();
                 GetKeyValues(data, kvParams);
+                Log(kvParams);
                 Log(parms);
                 resp = router.Route(verb, path, kvParams);
+                session.UpdateLastConnection();
 
                 if (resp.Error != Enums.ServerErrors.OK)
                 {
@@ -148,6 +153,11 @@ namespace LeanWebServer
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        public static void Log(Dictionary<string, object> kvparamas) 
+        {
+            kvparamas.ForEach(f => Console.WriteLine(f.Key +" " + f.Value)); 
         }
 
 
