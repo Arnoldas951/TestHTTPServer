@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LeanWebServer.Extentions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,47 +9,55 @@ namespace LeanWebServer
 {
     public abstract class RouteHandler
     {
-        protected Func<Session, Dictionary<string, object>, string> handler;
+        protected readonly Server server;
+        protected Func<Session, Dictionary<string, object>, ResponsePacket> handler;
 
-        public RouteHandler(Func<Session, Dictionary<string, object>, string> handler) 
+        public RouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler) 
         {
+            this.server = server;
             this.handler = handler;
         }
 
-        public abstract string Handle(Session session, Dictionary<string, object> parms);
+        public virtual ResponsePacket Handle(Session session, Dictionary<string, object> parms) 
+        {
+            return InvokeHandler(session, parms);
+        }
+
+        protected ResponsePacket InvokeHandler(Session session, Dictionary<string, object> parms)
+        {
+            ResponsePacket packet = null;
+            handler.IfNotNull((h) => packet = h(session, parms));
+
+            return packet;
+        }
     }
 
     public class AnonymousRouteHandler : RouteHandler
     {
-        public AnonymousRouteHandler(Func<Session, Dictionary<string, object>, string> handler) : base(handler) 
-        {
 
-        }
-
-        public override string Handle(Session session, Dictionary<string, object> parms)
+        public AnonymousRouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler = null) : base(server, handler) 
         {
-            return handler(session, parms);
+            
         }
     }
 
     public class AuthorizedRouteHandler : RouteHandler
     {
-        private readonly Server server;
-        public AuthorizedRouteHandler(Func<Session, Dictionary<string, object>, string> handler, Server server) : base(handler)
+
+        public AuthorizedRouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler = null) : base(server, handler)
         {
-            this.server = server;
         }
 
-        public override string Handle(Session session, Dictionary<string, object> parms)
+        public override ResponsePacket Handle(Session session, Dictionary<string, object> parms)
         {
-            string result;
+            ResponsePacket result;
             if (session.IsAuthorized)
             {
-                result = handler(session, parms);
+                result = InvokeHandler(session, parms);
             }
             else 
             {
-                result = server.OnError(Enums.ServerErrors.NotAuthorized);
+                result =  server.Redirect(server.OnError(Enums.ServerErrors.NotAuthorized));
             }
 
             return result;
@@ -57,22 +66,20 @@ namespace LeanWebServer
 
     public class AuthorizedExpirableRouteHandler : AuthorizedRouteHandler
     {
-        private readonly Server server;
-        public AuthorizedExpirableRouteHandler(Func<Session, Dictionary<string, object>, string> handler, Server server) : base(handler, server) 
+        public AuthorizedExpirableRouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler = null) : base(server, handler) 
         {
-            this.server = server;
         }
-        public override string Handle(Session session, Dictionary<string, object> parms)
+        public override ResponsePacket Handle(Session session, Dictionary<string, object> parms)
         {
-            string result = string.Empty;
+            ResponsePacket result = null;
             if (session.IsExpired(Server.ExpirationTimeInSeconds))
             {
                 session.IsAuthorized = false;
-                result = server.OnError(Enums.ServerErrors.ExpiredSession);
+                result = server.Redirect(server.OnError(Enums.ServerErrors.ExpiredSession));
             }
             else 
             {
-                result = handler(session, parms);
+                result = InvokeHandler(session, parms);
             }
 
             return result;

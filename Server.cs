@@ -27,6 +27,9 @@ namespace LeanWebServer
         public const int ExpirationTimeInSeconds = 120;
         public Func<ServerErrors, string> OnError { get; set; }
 
+        public static string validationTokenScript = "<%AntiForgeryToken%>";
+        public static string validationTokenName = "__CSRFToken__";
+
         public Server()
         {
             router = new Router();
@@ -83,20 +86,27 @@ namespace LeanWebServer
                 GetKeyValues(data, kvParams);
                 Log(kvParams);
                 Log(parms);
-                resp = router.Route(session, verb, path, kvParams);
-                session.UpdateLastConnection();
-
-                if (resp.Error != Enums.ServerErrors.OK)
+                if (!verifyCSRF(session, kvParams))
                 {
-                    resp = router.Route(session, "get", OnError(resp.Error), null);
-                    resp.Redirect = OnError(resp.Error);
+                    context.Response.OutputStream.Close();
                 }
+                else
+                {
+                    resp = router.Route(session, verb, path, kvParams);
+                    session.UpdateLastConnection();
 
-                Respond(context.Request, context.Response, resp);
+                    if (resp.Error != Enums.ServerErrors.OK)
+                    {
+                        resp = router.Route(session, "get", OnError(resp.Error), null);
+                        resp.Redirect = OnError(resp.Error);
+                    }
 
-                Console.WriteLine("Connected: " + context.Request.UserAgent);
-                sem.Release();
-                Log(context.Request);
+                    Respond(context.Request, context.Response, resp);
+
+                    Console.WriteLine("Connected: " + context.Request.UserAgent);
+                    sem.Release();
+                    Log(context.Request);
+                }
             }
             catch (Exception ex)
             {
@@ -104,6 +114,7 @@ namespace LeanWebServer
                 Log(ex.StackTrace);
                 resp = new ResponsePacket() { Redirect = OnError(ServerErrors.ServerError) };
             }
+            
         }
 
         private void RunServer(HttpListener listener)
@@ -196,6 +207,37 @@ namespace LeanWebServer
             data.If(d => d.Length > 0, (d) => d.Split('&').ForEach(keyValue => kv[keyValue.LeftOf("=")] = System.Uri.UnescapeDataString(keyValue.RightOf("="))));
 
             return kv;
+        }
+
+        public ResponsePacket Redirect(string url, string parm = null)
+        {
+            ResponsePacket packet = new ResponsePacket() { Redirect = url };
+
+            parm.IfNotNull((p) => packet.Redirect += "?" + p);
+
+            return packet;
+        }
+
+        public static string DefaultPostProcessing(Session session, string html)
+        {
+            string result = html.Replace(validationTokenScript, "<input name='" + validationTokenName + "'type='hidden' value='" + session.Objects[validationTokenName].ToString()
+                + " id='#__csrf__'" + "/>");
+            return result;
+        }
+
+        private bool verifyCSRF(Session session, Dictionary<string, object> kvParams)
+        {
+            bool result = true;
+            object token;
+            if (kvParams.TryGetValue(validationTokenName, out token))
+            {
+                result = session.Objects[validationTokenName].ToString() == token.ToString();
+            }
+            else
+            {
+                Log("CSRF didnt pass");
+            }
+            return result;
         }
 
 

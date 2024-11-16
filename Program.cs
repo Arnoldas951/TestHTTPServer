@@ -5,13 +5,15 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 
 class Program
 {
+    public static Server server;
     static void Main(string[] args)
     {
-        Server server = new Server();
+        server = new Server();
         server.OnError = ErrorHandler.ErrorHandling;
         server.Start(GetWebsitePath());
         Server.onRequest = (session, context) =>
@@ -19,7 +21,9 @@ class Program
             session.IsAuthorized = true;
             session.UpdateLastConnection();
         };
-        server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/demo/redirect", Handler = new AuthorizedExpirableRouteHandler(RedirectAction, server) });
+
+        server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/demo/redirect", Handler = new AuthorizedExpirableRouteHandler(server, RedirectAction) });
+        server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/demo/ajax", Handler = new AnonymousRouteHandler(server, AjaxResponder) });
         Console.ReadLine();
     }
 
@@ -31,8 +35,16 @@ class Program
         return webSitePath;
     }
 
-    public static string RedirectAction(Session session, Dictionary<string, object> parms)
+    public static ResponsePacket RedirectAction(Session session, Dictionary<string, object> parms)
     {
-        return "/demo/clicked";
+        return server.Redirect("/demo/clicked");
+    }
+
+    public static ResponsePacket AjaxResponder(Session session, Dictionary<string, object> parms) 
+    {
+        string data = "EL OU EL " + parms["number"].ToString();
+        
+        ResponsePacket packet = new ResponsePacket() { Data = Encoding.UTF8.GetBytes(data), ContentType = "text"};
+        return packet;
     }
 }

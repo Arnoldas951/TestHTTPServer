@@ -19,7 +19,7 @@ namespace LeanWebServer
     internal class ExtensionInfo
     {
         public string ContentType { get; set; }
-        public Func<Session,string, string, ExtensionInfo, ResponsePacket> Loader { get; set; }
+        public Func<Session, string, string, ExtensionInfo, ResponsePacket> Loader { get; set; }
     }
 
     public class Router
@@ -62,23 +62,24 @@ namespace LeanWebServer
             {
                 string wpath = path.Substring(1).Replace('/', '\\');
                 string fullPath = Path.Combine(WebsitePath, wpath);
-                Route route = routes.SingleOrDefault(r => r.Verb.ToLower() == verb && path == r.Path);
-                if (route != null)
+                Route handler = routes.SingleOrDefault(r => r.Verb.ToLower() == verb && path == r.Path);
+
+                if (handler != null)
                 {
-                    string redirect = route.Handler.Handle(session, kvParams);
+                    ResponsePacket handlerResponse = handler.Handler.Handle(session, kvParams);
 
-                    if (string.IsNullOrEmpty(redirect))
+                    if (handlerResponse == null)
                     {
 
-                        ret = extinfo.Loader(session ,fullPath, ext, extinfo);
+                        ret = extinfo.Loader(session, fullPath, ext, extinfo);
                     }
-                    else 
+                    else
                     {
-                        ret = new ResponsePacket() { Redirect = redirect};
+                        ret = handlerResponse;
                     }
 
                 }
-                else 
+                else
                 {
                     ret = extinfo.Loader(session, fullPath, ext, extinfo);
                 }
@@ -90,7 +91,7 @@ namespace LeanWebServer
 
             return ret;
         }
-
+       
         private ResponsePacket ImageLoader(Session session, string fullPath, string ext, ExtensionInfo extInfo)
         {
             if (File.Exists(fullPath))
@@ -115,6 +116,7 @@ namespace LeanWebServer
             if (File.Exists(fullPath))
             {
                 string text = File.ReadAllText(fullPath);
+                text = Server.DefaultPostProcessing(session, text);
                 ResponsePacket response = new ResponsePacket() { Data = Encoding.UTF8.GetBytes(text), ContentType = extensionInfo.ContentType, Encoding = Encoding.UTF8 };
                 return response;
 
@@ -126,13 +128,13 @@ namespace LeanWebServer
             }
         }
 
-        private ResponsePacket PageLoader(Session session,string fullPath, string ext, ExtensionInfo extInfo)
+        private ResponsePacket PageLoader(Session session, string fullPath, string ext, ExtensionInfo extInfo)
         {
             ResponsePacket ret = new ResponsePacket();
 
             if (fullPath == WebsitePath)
             {
-                ret = Route(session ,GET, "/index.html", null);
+                ret = Route(session, GET, "/index.html", null);
             }
             else
             {

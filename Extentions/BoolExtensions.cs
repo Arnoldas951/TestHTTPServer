@@ -33,5 +33,15 @@ namespace LeanWebServer.Extentions
 
             return ret;
         }
+
+        public static bool IfNotNull<T>(this T obj, Action<T> action)
+        {
+           bool result = obj != null;
+
+            if (result)
+                action(obj);
+
+            return result;
+        }
     }
 }
