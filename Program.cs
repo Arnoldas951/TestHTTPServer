@@ -12,22 +12,26 @@ class Program
     static void Main(string[] args)
     {
         Server server = new Server();
-
         server.OnError = ErrorHandler.ErrorHandling;
         server.Start(GetWebsitePath());
-        server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/demo/redirect", Action = RedirectAction });
+        Server.onRequest = (session, context) =>
+        {
+            session.IsAuthorized = true;
+            session.UpdateLastConnection();
+        };
+        server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/demo/redirect", Handler = new AuthorizedExpirableRouteHandler(RedirectAction, server) });
         Console.ReadLine();
     }
 
     public static string GetWebsitePath()
     {
         string webSitePath = Assembly.GetExecutingAssembly().Location;
-        webSitePath = webSitePath.LeftOfRightmostOf("\\").LeftOfRightmostOf("\\").LeftOfRightmostOf("\\").LeftOfRightmostOf("\\")  + "\\Website";
+        webSitePath = webSitePath.LeftOfRightmostOf("\\").LeftOfRightmostOf("\\").LeftOfRightmostOf("\\").LeftOfRightmostOf("\\") + "\\Website";
 
         return webSitePath;
     }
 
-    public static string RedirectAction(Dictionary<string, object> parms)
+    public static string RedirectAction(Session session, Dictionary<string, object> parms)
     {
         return "/demo/clicked";
     }

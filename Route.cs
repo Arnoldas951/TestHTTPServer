@@ -10,7 +10,7 @@ namespace LeanWebServer
     {
         public string Verb { get; set; }
         public string Path { get; set; }
-        public Func<Dictionary<string, object>, string> Action { get; set; }
 
+        public RouteHandler Handler { get; set; }
     }
 }

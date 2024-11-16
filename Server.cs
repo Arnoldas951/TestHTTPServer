@@ -11,12 +11,20 @@ namespace LeanWebServer
 {
     public class Server
     {
+
+        /// <summary>
+        /// For testing, never expire, always authorized
+        /// </summary>
+        public static Action<Session, HttpListenerContext> onRequest;
+
+
         private static HttpListener _listener;
         public static int maxSimultaneousConnections = 20;
         private static Semaphore sem = new Semaphore(maxSimultaneousConnections, maxSimultaneousConnections);
         private static string logLocation = @"D:\Logs\";
         public Router router;
         private SessionManager sessionManager;
+        public const int ExpirationTimeInSeconds = 120;
         public Func<ServerErrors, string> OnError { get; set; }
 
         public Server()
@@ -75,12 +83,12 @@ namespace LeanWebServer
                 GetKeyValues(data, kvParams);
                 Log(kvParams);
                 Log(parms);
-                resp = router.Route(verb, path, kvParams);
+                resp = router.Route(session, verb, path, kvParams);
                 session.UpdateLastConnection();
 
                 if (resp.Error != Enums.ServerErrors.OK)
                 {
-                    resp = router.Route("get", OnError(resp.Error), null);
+                    resp = router.Route(session, "get", OnError(resp.Error), null);
                     resp.Redirect = OnError(resp.Error);
                 }
 
@@ -155,9 +163,9 @@ namespace LeanWebServer
             }
         }
 
-        public static void Log(Dictionary<string, object> kvparamas) 
+        public static void Log(Dictionary<string, object> kvparamas)
         {
-            kvparamas.ForEach(f => Console.WriteLine(f.Key +" " + f.Value)); 
+            kvparamas.ForEach(f => Console.WriteLine(f.Key + " " + f.Value));
         }
 
 
