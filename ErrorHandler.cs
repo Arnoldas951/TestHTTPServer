@@ -16,7 +16,7 @@ namespace LeanWebServer
                 ServerErrors.ExpiredSession => "/ErrorPages/expiredSession.html",
                 ServerErrors.ServerError => "/ErrorPages/serverError.html",
                 ServerErrors.UnknownType => "/ErrorPages/unknownType.html",
-                ServerErrors.NotAuthorized => "/ErrorPages/notAuthorized.html",
+                ServerErrors.NotAuthorized => "/User/login.html",
                 ServerErrors.FileNotFound => "/ErrorPages/fileNotFound.html",
                 ServerErrors.PageNotFound=> "/ErrorPages/pageNotFound.html",
                 _=> "/ErrorPages/fileNotFound.html"

@@ -1,3 +1,14 @@
 ﻿body {
     background-color:aqua;
 }
+
+.hiddenErrorMessage
+{
+    display:none;
+}
+
+.errorSummary {
+
+    background-color:red;
+    color: #000f
+}

@@ -76,7 +76,6 @@ namespace LeanWebServer
             HttpListenerContext context = await listener.GetContextAsync();
             try
             {
-
                 Session session = sessionManager.GetSession(context.Request.RemoteEndPoint);
                 string path = context.Request.RawUrl.LeftOf("?");
                 string verb = context.Request.HttpMethod;
@@ -86,9 +85,11 @@ namespace LeanWebServer
                 GetKeyValues(data, kvParams);
                 Log(kvParams);
                 Log(parms);
-                if (!verifyCSRF(session, kvParams))
+                if (verb == Router.POST && !verifyCSRF(session, kvParams))
                 {
-                    context.Response.OutputStream.Close();
+                    //context.Response.OutputStream.Close();
+                    resp = router.Route(session, "get", OnError(ServerErrors.NotAuthorized), null);
+                    resp.Redirect = OnError(ServerErrors.NotAuthorized);
                 }
                 else
                 {
@@ -97,16 +98,16 @@ namespace LeanWebServer
 
                     if (resp.Error != Enums.ServerErrors.OK)
                     {
-                        resp = router.Route(session, "get", OnError(resp.Error), null);
                         resp.Redirect = OnError(resp.Error);
                     }
 
-                    Respond(context.Request, context.Response, resp);
-
-                    Console.WriteLine("Connected: " + context.Request.UserAgent);
-                    sem.Release();
-                    Log(context.Request);
                 }
+                Respond(context.Request, context.Response, resp);
+
+                Console.WriteLine("Connected: " + context.Request.UserAgent);
+                sem.Release();
+                Log(context.Request);
+
             }
             catch (Exception ex)
             {
@@ -114,7 +115,7 @@ namespace LeanWebServer
                 Log(ex.StackTrace);
                 resp = new ResponsePacket() { Redirect = OnError(ServerErrors.ServerError) };
             }
-            
+
         }
 
         private void RunServer(HttpListener listener)
@@ -236,6 +237,7 @@ namespace LeanWebServer
             else
             {
                 Log("CSRF didnt pass");
+                result = false;
             }
             return result;
         }

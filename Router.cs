@@ -62,16 +62,25 @@ namespace LeanWebServer
             {
                 string wpath = path.Substring(1).Replace('/', '\\');
                 string fullPath = Path.Combine(WebsitePath, wpath);
+
                 Route handler = routes.SingleOrDefault(r => r.Verb.ToLower() == verb && path == r.Path);
 
                 if (handler != null)
                 {
-                    ResponsePacket handlerResponse = handler.Handler.Handle(session, kvParams);
+                    ResponsePacket handlerResponse = handler.Handler.Handle(session, kvParams, path);
 
                     if (handlerResponse == null)
                     {
-
-                        ret = extinfo.Loader(session, fullPath, ext, extinfo);
+                        if (!session.IsAuthorized & path != "/User/login.html")
+                        {
+                            ret = new ResponsePacket() { Error = ServerErrors.NotAuthorized, Redirect = "/User/login.html" };
+                            ret.Data = Encoding.UTF8.GetBytes("Unauthenticated User");
+                            return ret;
+                        }
+                        else
+                        {
+                            ret = extinfo.Loader(session, fullPath, ext, extinfo);
+                        }
                     }
                     else
                     {
@@ -81,7 +90,17 @@ namespace LeanWebServer
                 }
                 else
                 {
-                    ret = extinfo.Loader(session, fullPath, ext, extinfo);
+                    if (!session.IsAuthorized & path != "/User/login.html")
+                    {
+                        ret = new ResponsePacket() { Error = ServerErrors.NotAuthorized, Redirect = "/User/login.html" };
+                        ret.Data = Encoding.UTF8.GetBytes("Unauthenticated User");
+                        return ret;
+                    }
+                    else
+                    {
+                        ret = extinfo.Loader(session, fullPath, ext, extinfo);
+                    }
+                    //ret = new ResponsePacket() { Error = ServerErrors.HandlerNotRegistered, Redirect = "handlerNotRegistered.html" };
                 }
             }
             else
@@ -91,7 +110,7 @@ namespace LeanWebServer
 
             return ret;
         }
-       
+
         private ResponsePacket ImageLoader(Session session, string fullPath, string ext, ExtensionInfo extInfo)
         {
             if (File.Exists(fullPath))

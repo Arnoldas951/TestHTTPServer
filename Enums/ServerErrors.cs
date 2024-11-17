@@ -15,5 +15,6 @@ namespace LeanWebServer.Enums
         PageNotFound,
         ServerError,
         UnknownType,
+        HandlerNotRegistered
     }
 }

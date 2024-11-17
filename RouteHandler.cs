@@ -10,23 +10,23 @@ namespace LeanWebServer
     public abstract class RouteHandler
     {
         protected readonly Server server;
-        protected Func<Session, Dictionary<string, object>, ResponsePacket> handler;
+        protected Func<Session, Dictionary<string, object>, string, ResponsePacket> handler;
 
-        public RouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler) 
+        public RouteHandler(Server server, Func<Session, Dictionary<string, object>, string, ResponsePacket> handler) 
         {
             this.server = server;
             this.handler = handler;
         }
 
-        public virtual ResponsePacket Handle(Session session, Dictionary<string, object> parms) 
+        public virtual ResponsePacket Handle(Session session, Dictionary<string, object> parms, string path) 
         {
-            return InvokeHandler(session, parms);
+            return InvokeHandler(session, parms, path);
         }
 
-        protected ResponsePacket InvokeHandler(Session session, Dictionary<string, object> parms)
+        protected ResponsePacket InvokeHandler(Session session, Dictionary<string, object> parms, string path)
         {
             ResponsePacket packet = null;
-            handler.IfNotNull((h) => packet = h(session, parms));
+            handler.IfNotNull((h) => packet = h(session, parms, path));
 
             return packet;
         }
@@ -35,7 +35,7 @@ namespace LeanWebServer
     public class AnonymousRouteHandler : RouteHandler
     {
 
-        public AnonymousRouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler = null) : base(server, handler) 
+        public AnonymousRouteHandler(Server server, Func<Session, Dictionary<string, object>, string, ResponsePacket> handler = null) : base(server, handler) 
         {
             
         }
@@ -44,16 +44,16 @@ namespace LeanWebServer
     public class AuthorizedRouteHandler : RouteHandler
     {
 
-        public AuthorizedRouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler = null) : base(server, handler)
+        public AuthorizedRouteHandler(Server server, Func<Session, Dictionary<string, object>, string, ResponsePacket> handler = null) : base(server, handler)
         {
         }
 
-        public override ResponsePacket Handle(Session session, Dictionary<string, object> parms)
+        public override ResponsePacket Handle(Session session, Dictionary<string, object> parms, string path)
         {
             ResponsePacket result;
             if (session.IsAuthorized)
             {
-                result = InvokeHandler(session, parms);
+                result = InvokeHandler(session, parms, path);
             }
             else 
             {
@@ -66,10 +66,10 @@ namespace LeanWebServer
 
     public class AuthorizedExpirableRouteHandler : AuthorizedRouteHandler
     {
-        public AuthorizedExpirableRouteHandler(Server server, Func<Session, Dictionary<string, object>, ResponsePacket> handler = null) : base(server, handler) 
+        public AuthorizedExpirableRouteHandler(Server server, Func<Session, Dictionary<string, object>, string, ResponsePacket> handler = null) : base(server, handler) 
         {
         }
-        public override ResponsePacket Handle(Session session, Dictionary<string, object> parms)
+        public override ResponsePacket Handle(Session session, Dictionary<string, object> parms, string path)
         {
             ResponsePacket result = null;
             if (session.IsExpired(Server.ExpirationTimeInSeconds))
@@ -79,7 +79,7 @@ namespace LeanWebServer
             }
             else 
             {
-                result = InvokeHandler(session, parms);
+                result = InvokeHandler(session, parms, path);
             }
 
             return result;

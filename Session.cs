@@ -6,7 +6,6 @@ namespace LeanWebServer
     {
         public DateTime LastConnection { get; set; }
         public bool IsAuthorized { get; set; }
-
         public Dictionary<string, object> Objects { get; set; }
 
         public Session()

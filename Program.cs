@@ -16,14 +16,20 @@ class Program
         server = new Server();
         server.OnError = ErrorHandler.ErrorHandling;
         server.Start(GetWebsitePath());
-        Server.onRequest = (session, context) =>
-        {
-            session.IsAuthorized = true;
-            session.UpdateLastConnection();
-        };
+        //Server.onRequest = (session, context) =>
+        //{
+        //    session.IsAuthorized = true;
+        //    session.UpdateLastConnection();
+        //};
 
-        server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/demo/redirect", Handler = new AuthorizedExpirableRouteHandler(server, RedirectAction) });
-        server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/demo/ajax", Handler = new AnonymousRouteHandler(server, AjaxResponder) });
+        server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/demo/redirect", Handler = new AuthorizedRouteHandler(server, RedirectTo) });
+        //server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/demo/redirect.html", Handler = new AuthorizedRouteHandler(server, RedirectTo) });
+        //server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/demo/ajax", Handler = new AuthorizedRouteHandler(server, AjaxResponder) });
+        //server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/User/login.html", Handler = new AnonymousRouteHandler(server, RedirectTo) });
+        //server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/User/register.html", Handler = new AnonymousRouteHandler(server, RedirectTo) });
+        server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/User/register", Handler = new AnonymousRouteHandler(server, Register) });
+        //server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/demo/clicked.html", Handler = new AuthorizedRouteHandler(server, RedirectTo) });
+
         Console.ReadLine();
     }
 
@@ -35,12 +41,29 @@ class Program
         return webSitePath;
     }
 
-    public static ResponsePacket RedirectAction(Session session, Dictionary<string, object> parms)
+    public static ResponsePacket RedirectTo(Session session, Dictionary<string, object> parms, string path) 
+    {
+        return server.Redirect(path);
+    }
+
+    public static ResponsePacket Register(Session session, Dictionary<string, object> parms, string path)
+    {
+        string data = "test";
+        ResponsePacket packet = new ResponsePacket() { Data = Encoding.UTF8.GetBytes(data), ContentType = "text" };
+        return packet;
+    }
+
+    public static ResponsePacket RedirectAction(Session session, Dictionary<string, object> parms, string path)
     {
         return server.Redirect("/demo/clicked");
     }
 
-    public static ResponsePacket AjaxResponder(Session session, Dictionary<string, object> parms) 
+    public static ResponsePacket RedirectToLogin(Session session, Dictionary<string, object> parms, string path) 
+    {
+        return server.Redirect("/User/login.html");
+    }
+
+    public static ResponsePacket AjaxResponder(Session session, Dictionary<string, object> parms, string path) 
     {
         string data = "EL OU EL " + parms["number"].ToString();
         
