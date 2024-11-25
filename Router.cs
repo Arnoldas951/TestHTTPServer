@@ -71,7 +71,7 @@ namespace LeanWebServer
 
                     if (handlerResponse == null)
                     {
-                        if (!session.IsAuthorized & path != "/User/login.html")
+                        if (!session.IsAuthorized && path != "/User/login.html")
                         {
                             ret = new ResponsePacket() { Error = ServerErrors.NotAuthorized, Redirect = "/User/login.html" };
                             ret.Data = Encoding.UTF8.GetBytes("Unauthenticated User");
@@ -90,7 +90,7 @@ namespace LeanWebServer
                 }
                 else
                 {
-                    if (!session.IsAuthorized & path != "/User/login.html")
+                    if (!session.IsAuthorized && path != "/User/login.html")
                     {
                         ret = new ResponsePacket() { Error = ServerErrors.NotAuthorized, Redirect = "/User/login.html" };
                         ret.Data = Encoding.UTF8.GetBytes("Unauthenticated User");

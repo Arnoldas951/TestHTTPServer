@@ -1,5 +1,6 @@
 ﻿using LeanWebServer;
 using LeanWebServer.Extentions;
+using LeanWebServer.Routing;
 using System.ComponentModel.Design;
 using System.Net;
 using System.Net.Sockets;
@@ -21,6 +22,8 @@ class Program
         //    session.IsAuthorized = true;
         //    session.UpdateLastConnection();
         //};
+
+        //RouteTree.AddRoute("/User/login.html", "");
 
         server.router.AddRoute(new Route() { Verb = Router.POST, Path = "/demo/redirect", Handler = new AuthorizedRouteHandler(server, RedirectTo) });
         //server.router.AddRoute(new Route() { Verb = Router.GET, Path = "/demo/redirect.html", Handler = new AuthorizedRouteHandler(server, RedirectTo) });
